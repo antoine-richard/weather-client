@@ -21,14 +21,16 @@ type cityWeather struct {
 	}
 }
 
-var apiKey *string
-var weather *cityWeather
+var (
+	apiKey  *string
+	weather *cityWeather
+)
+var client = gentleman.New()
 var cities = map[string]string{
 	"Nantes":    "2990969",
 	"Palo Alto": "5380748",
 	"Prague":    "3067696",
 }
-var http = gentleman.New()
 
 func main() {
 	parseFlags()
@@ -43,12 +45,12 @@ func main() {
 }
 
 func parseFlags() {
-	apiKey = flag.String("key", "", "Open Weather Map API key")
+	apiKey = flag.String("key", "", "OpenWeatherMap API key")
 	flag.Parse()
 }
 
 func getWeather(cityID string) {
-	req := http.Request().URL("api.openweathermap.org")
+	req := client.Request().URL("api.openweathermap.org")
 	req.Path("/data/2.5/weather")
 	req.SetQuery("id", cityID)
 	req.SetQuery("appid", *apiKey)
