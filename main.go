@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"math"
@@ -35,12 +36,16 @@ var cities = map[string]string{
 func main() {
 	parseFlags()
 	for _, cityID := range cities {
-		getWeather(cityID)
-		fmt.Printf("%v: %v (%v), %v°C\n",
-			weather.Name,
-			weather.Weather[0].Main,
-			weather.Weather[0].Description,
-			kelvinToCelsius(weather.Main.Temp))
+		err := fetchWeather(cityID)
+		if err == nil {
+			fmt.Printf("%v: %v (%v), %v°C\n",
+				weather.Name,
+				weather.Weather[0].Main,
+				weather.Weather[0].Description,
+				kelvinToCelsius(weather.Main.Temp))
+		} else {
+			fmt.Print(err)
+		}
 	}
 }
 
@@ -49,7 +54,7 @@ func parseFlags() {
 	flag.Parse()
 }
 
-func getWeather(cityID string) {
+func fetchWeather(cityID string) error {
 	req := client.Request().URL("api.openweathermap.org")
 	req.Path("/data/2.5/weather")
 	req.SetQuery("id", cityID)
@@ -57,20 +62,19 @@ func getWeather(cityID string) {
 
 	res, err := req.Send()
 	if err != nil {
-		fmt.Printf("Request error: %s\n", err)
-		return
+		return errors.New("Request error: " + err.Error())
 	}
 	if !res.Ok {
-		fmt.Printf("Invalid server response: %d\n", res.StatusCode)
-		return
+		return errors.New(fmt.Sprintf("Invalid server response: %d\n", res.StatusCode))
 	}
 
 	weather = &cityWeather{}
 	err = res.JSON(weather)
 	if err != nil {
-		fmt.Printf("JSON parse error: %s\n", err)
-		return
+		return errors.New("JSON parse error: " + err.Error())
 	}
+
+	return nil
 }
 
 func kelvinToCelsius(temp float64) int {
